@@ -16,5 +16,20 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // 1. Makes an incrementer which adds 1 to the previous register output.
+    Inc16(in=regout, out=add1);
+
+    // 2. Passes the output to a Mux for increment, load or reset
+    // Note: As given in the if-else statements reset has the highest
+    //       priority so reset control the register input
+    Mux16(a=false, b=add1, sel=inc, out=incout);
+    Mux16(a=incout, b=in, sel=load, out=loadout);
+    Mux16(a=loadout, b=false, sel=reset, out=resetout);
+
+    // 3. See whether update is required or not
+    Or(a=reset ,b=load ,out=ResetorLoad );
+    Or(a=ResetorLoad ,b=inc ,out=isUpdate );
+
+    // 4. Updates the ouput
+    Register(in=resetout, load=isUpdate, out=regout , out=out);
 }
