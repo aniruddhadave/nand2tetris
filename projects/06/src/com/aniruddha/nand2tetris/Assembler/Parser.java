@@ -29,11 +29,10 @@ public class Parser {
 		try {
 			this.lineCount = Files.lines(path).count();
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		this.currentLine = "";
-		this.currentLineNo= 0;
+		this.currentLineNo= -1;
 		this.command = "";
 		
 		File inputFile = new File(fileName);
@@ -57,11 +56,15 @@ public class Parser {
 		this.currentLineNo += 1;
 		try {
 			this.currentLine = this.br.readLine();
+			if (this.currentLine.indexOf("//") != -1) {
+				this.currentLine = this.currentLine.substring(0, this.currentLine.indexOf("//"));
+			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if (this.currentLine.equals("\n")) {
+			this.advance();
+		} else if (this.currentLine.startsWith("//") || this.currentLine.isEmpty()) {
 			this.advance();
 		} else {
 			this.command = this.currentLine.trim();
@@ -69,15 +72,15 @@ public class Parser {
 	}
 	
 	public int commandType() {
-		if (this.command.matches("^@.*")) {
+		if (this.command.matches("^@(.*)")) {
 			return ACOMMAND;
-		} else if (this.command.matches("^(.*")) {
+		} else if (this.command.matches("^\\(.*")) {
 			return LCOMMAND;
 		} else return CCOMMAND;
 	}
 	
 	public String symbol() {
-		Pattern pattern = Pattern.compile("^[@(](.*?))?$");
+		Pattern pattern = Pattern.compile("^[@\\(](.*?)\\)?$");
 		Matcher matcher = pattern.matcher(this.command);
 		try {
 			matcher.find();
@@ -98,13 +101,20 @@ public class Parser {
 	}
 	
 	public String comp() {
-		Pattern pattern = Pattern.compile("^.*?=(.*?);.*$");
-		Matcher matcher = pattern.matcher(this.command);
+		int idx1 = this.command.indexOf("=");
+		int idx2 = this.command.indexOf(";");
 		String comp = "";
-		if (matcher.find()) {
-			comp = matcher.group(1);
+		if ((idx1 != -1) && (idx2 != -1)) {
+			comp = this.command.substring(idx1 +1, idx2);
+		} else if ((idx1 != -1) && (idx2 == -1)) {
+			comp = this.command.substring(idx1 +1);
+		} else if ((idx1 == -1) && (idx2 != -1)) {
+			comp = this.command.substring(0, idx2);
 		}
-		return comp;
+		if (comp.isEmpty()) {
+			System.out.println("No comp found in command: " + this.command);
+		}
+		return comp.trim();
 	}
 	
 	public String jump() {
